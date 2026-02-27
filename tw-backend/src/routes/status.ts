@@ -14,9 +14,14 @@ statusRouter.get('/', (req, res) => {
       running: true,
       tailwindVersion: '4.0.0', // TODO: get from package
       totalClasses: stats.totalClasses,
+      tailwindClassCount: stats.totalClasses, // Alias for popup compatibility
       totalCustomClasses: stats.totalCustomClasses,
+      customClassCount: stats.totalCustomClasses, // Alias for popup compatibility
       watchedFile: getWatchedFile(),
       lastUpdated: new Date().toISOString(),
+      config: {
+        cssFilePath: getWatchedFile() || undefined,
+      },
     },
   });
 });

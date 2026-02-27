@@ -9,5 +9,8 @@ export default defineConfig({
     version: '0.1.0',
     permissions: ['activeTab', 'storage'],
     host_permissions: ['http://localhost:3000/*'],
+    action: {
+      default_title: 'UX Builder Tailwind CSS Settings',
+    },
   },
 });

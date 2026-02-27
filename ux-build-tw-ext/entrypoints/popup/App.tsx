@@ -33,38 +33,50 @@ function App() {
    * Load backend status and custom classes
    */
   const loadData = async (): Promise<void> => {
+    console.log('[Popup] Loading data...');
     setLoading(true);
     setError(null);
 
     try {
       // Get backend status
+      console.log('[Popup] Requesting backend status...');
       const statusRequest: GetStatusRequest = { action: 'getStatus' };
       const statusResponse = await browser.runtime.sendMessage<
         GetStatusRequest,
         GetStatusResponse
       >(statusRequest);
 
+      console.log('[Popup] Status response:', statusResponse);
+
       if ('data' in statusResponse && statusResponse.data) {
+        console.log('[Popup] Got status data:', statusResponse.data);
         setStatus(statusResponse.data);
         setCssFilePath(statusResponse.data.config?.cssFilePath || '');
       } else {
+        console.error('[Popup] Status error:', statusResponse);
         setError(statusResponse.message || 'Failed to get backend status');
       }
 
       // Get custom classes
+      console.log('[Popup] Requesting custom classes...');
       const customRequest: GetCustomClassesRequest = { action: 'getCustomClasses' };
       const customResponse = await browser.runtime.sendMessage<
         GetCustomClassesRequest,
         GetCustomClassesResponse
       >(customRequest);
 
+      console.log('[Popup] Custom classes response:', customResponse);
+
       if ('data' in customResponse && customResponse.data) {
+        console.log('[Popup] Got custom classes:', customResponse.data.length);
         setCustomClasses(customResponse.data);
       }
     } catch (err) {
+      console.error('[Popup] Error loading data:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
+      console.log('[Popup] Loading complete');
     }
   };
 
@@ -113,8 +125,11 @@ function App() {
     return new Date(time).toLocaleString();
   };
 
+  console.log('[Popup] Render - loading:', loading, 'error:', error, 'status:', status);
+
   // Loading state
   if (loading) {
+    console.log('[Popup] Showing loading state');
     return (
       <div className="popup-container">
         <div className="loading">Loading...</div>
@@ -124,6 +139,7 @@ function App() {
 
   // Error state
   if (error && !status) {
+    console.log('[Popup] Showing error state');
     return (
       <div className="popup-container">
         <div className="error-banner">
@@ -139,6 +155,7 @@ function App() {
     );
   }
 
+  console.log('[Popup] Showing main content');
   return (
     <div className="popup-container">
       <header className="popup-header">
@@ -165,11 +182,15 @@ function App() {
             </div>
             <div className="status-item">
               <span className="status-label">Utility Classes:</span>
-              <span className="status-value">{status.tailwindClassCount.toLocaleString()}</span>
+              <span className="status-value">
+                {(status.tailwindClassCount ?? status.totalClasses ?? 0).toLocaleString()}
+              </span>
             </div>
             <div className="status-item">
               <span className="status-label">Custom Classes:</span>
-              <span className="status-value">{status.customClassCount}</span>
+              <span className="status-value">
+                {status.customClassCount ?? status.totalCustomClasses ?? 0}
+              </span>
             </div>
             <div className="status-item">
               <span className="status-label">Last Updated:</span>
