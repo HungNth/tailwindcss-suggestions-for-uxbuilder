@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.output/
+.wxt/
+*.log
+.DS_Store
+.env
+.env.local
+stats.html
+stats-*.json
+web-ext.config.ts
