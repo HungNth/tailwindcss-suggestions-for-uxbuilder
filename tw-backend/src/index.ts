@@ -17,8 +17,14 @@ async function main() {
   const app = createApp();
   app.locals.store = store;
 
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.warn(`[tw-backend] Server running on http://localhost:${PORT}`);
+    console.warn(`[tw-backend] Server address:`, server.address());
+  });
+
+  server.on('error', (err) => {
+    console.error('[tw-backend] Server error:', err);
+    process.exit(1);
   });
 }
 
