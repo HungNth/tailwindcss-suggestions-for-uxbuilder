@@ -12,6 +12,29 @@ export function isUxBuilderPage(): boolean {
 }
 
 /**
+ * Wait for UX Builder editor to fully load
+ * Polls for the presence of UX Builder elements
+ */
+export async function waitForUxBuilder(timeout = 10000): Promise<void> {
+  const startTime = Date.now();
+
+  while (Date.now() - startTime < timeout) {
+    // Check if UX Builder container exists
+    const uxBuilder = document.querySelector('#ux-builder');
+    if (uxBuilder) {
+      // Wait a bit more for Angular to initialize
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      return;
+    }
+
+    // Wait before next check
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+
+  throw new Error('UX Builder editor failed to load within timeout');
+}
+
+/**
  * Find all target inputs (class inputs) in the UX Builder sidebar.
  */
 export function findClassInputs(): HTMLInputElement[] {
@@ -43,3 +66,4 @@ export function observeClassInputs(callback: (input: HTMLInputElement) => void):
 
   return observer;
 }
+

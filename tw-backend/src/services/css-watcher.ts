@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import chokidar from 'chokidar';
+import chokidar, { type FSWatcher } from 'chokidar';
 import type { CustomClass } from '@ux-builder-tw/shared';
 import { resolveApplyDirectives } from './apply-resolver';
 
@@ -8,7 +8,7 @@ interface WatcherCallbacks {
   onError: (error: Error) => void;
 }
 
-let watcher: chokidar.FSWatcher | null = null;
+let watcher: FSWatcher | null = null;
 let currentPath: string | null = null;
 
 export async function startWatching(
@@ -33,7 +33,8 @@ export async function startWatching(
     await parseAndNotify(filePath, callbacks);
   });
 
-  watcher.on('error', (error) => {
+  watcher.on('error', (err: unknown) => {
+    const error = err instanceof Error ? err : new Error(String(err));
     callbacks.onError(error);
   });
 }

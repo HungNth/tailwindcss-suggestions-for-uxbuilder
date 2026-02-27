@@ -17,12 +17,11 @@ classesRouter.get('/search', (req, res) => {
   const results = store.search(query, limit, offset);
   const customResults = store.searchCustom(query, limit);
 
+  // Combine utility and custom classes for autocomplete
+  const allClasses = [...results, ...customResults];
+
   res.json({
-    data: {
-      classes: results,
-      customClasses: customResults,
-      total: results.length + customResults.length,
-    },
+    data: allClasses,
   });
 });
 

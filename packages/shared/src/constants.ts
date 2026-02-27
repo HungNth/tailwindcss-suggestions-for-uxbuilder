@@ -1,4 +1,5 @@
 export const DEFAULT_BACKEND_URL = 'http://localhost:3000';
+export const BACKEND_URL = DEFAULT_BACKEND_URL; // Alias
 export const API_BASE = '/api';
 export const ENDPOINTS = {
   CLASSES: '/api/classes',
@@ -20,6 +21,12 @@ export const UX_BUILDER_SELECTORS = {
   TARGET_INPUT_BROAD: '#ux-builder input.ng-pristine',
 } as const;
 
+export const UX_BUILDER_SELECTOR =
+  'ux-option.option-name-class .option-body .option-template input.ng-pristine';
+
 export const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 export const DEFAULT_SEARCH_LIMIT = 50;
 export const DEBOUNCE_MS = 150;
+export const SEARCH_DEBOUNCE_MS = DEBOUNCE_MS; // Alias
+export const SEARCH_MIN_CHARS = 1;
+

@@ -1,17 +1,21 @@
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import postcss from 'postcss';
-import tailwindcss from 'tailwindcss';
+import tailwindcss from '@tailwindcss/postcss';
 import type { TailwindClass } from '@ux-builder-tw/shared';
 
 /**
  * Generate the complete list of Tailwind CSS v4 utility classes
  * by compiling a CSS file that uses @import "tailwindcss".
+ * Content scanning is configured in postcss.config.js
  */
 export async function generateClassList(): Promise<TailwindClass[]> {
-  // Tailwind v4 CSS-first approach: compile with all utilities enabled
-  const inputCSS = `@import "tailwindcss";`;
+  // Read Tailwind CSS v4 config file
+  const cssPath = resolve(process.cwd(), 'tailwind.css');
+  const inputCSS = await readFile(cssPath, 'utf-8');
 
   const result = await postcss([tailwindcss]).process(inputCSS, {
-    from: undefined,
+    from: cssPath,
   });
 
   return parseCSSToClasses(result.css);

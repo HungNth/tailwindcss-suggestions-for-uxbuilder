@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "skills": {
+    "browser-extension-builder": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "d8c7056ffd58cda2606c73eecee5ca23a0caf8e0edb73dcfd817e53fdfb01af7"
+    },
+    "chrome-extension-development": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "computedHash": "879436797b8c35a063dc89a04b4182975114c5baf9dbf692455b7ed164420f9e"
+    },
+    "executing-plans": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "computedHash": "7311ed85870f37e9af1e8354c500e7c4161893d845031eed43dd1d55157da83a"
+    },
+    "express-rest-api": {
+      "source": "pluginagentmarketplace/custom-plugin-nodejs",
+      "sourceType": "github",
+      "computedHash": "a8c4f3a426aa036af7d26b0d8ca22c57d1ce27ed76d19a6d40c48c4b4a5c5b3c"
+    },
+    "find-skills": {
+      "source": "vercel-labs/skills",
+      "sourceType": "github",
+      "computedHash": "25872a21881a950edc3db1f3329664d60405d539660ce05b3265db2de06a7dfd"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "516bd2154eb843a8240e43d5b285229129853114ad7075a5e141e1c08e408c84"
+    },
+    "nodejs-backend-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "7f1bf288467c197bde7cb8e4beb9d3568d61ef0d0d3d702b58394ea656757185"
+    },
+    "nodejs-best-practices": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "09655071834ba209436f7b56dc1c222eb555f9348a375a0c2aad3e266fac4c33"
+    },
+    "nodejs-express-server": {
+      "source": "aj-geddes/useful-ai-prompts",
+      "sourceType": "github",
+      "computedHash": "4636575a2204d9ff117ec7df26197908b2a13d351a42ab3bb6c973f821ad1540"
+    },
+    "ui-ux-pro-max": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "computedHash": "4cfe5e95a230616c17d92b44e3cd37bae543ce087a7756a446a62f77d7c58a37"
+    },
+    "writing-plans": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "computedHash": "8c536ae03ef3ab1fa974c0e50a65d803acddf5d4ee7cac68ab25a39b9e338611"
+    }
+  }
+}

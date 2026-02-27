@@ -1,0 +1,247 @@
+.popup-container {
+  width: 450px;
+  min-height: 500px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
+    sans-serif;
+  color: #1e1e1e;
+  background: #ffffff;
+  padding: 0;
+}
+
+.popup-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  padding: 20px;
+  text-align: center;
+}
+
+.popup-header h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.subtitle {
+  margin: 5px 0 0 0;
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.loading {
+  padding: 40px;
+  text-align: center;
+  color: #666;
+}
+
+.error-banner {
+  background: #fee;
+  border: 1px solid #fcc;
+  border-radius: 4px;
+  padding: 12px;
+  margin: 16px;
+  color: #c33;
+  font-size: 13px;
+}
+
+.success-banner {
+  background: #efe;
+  border: 1px solid #cfc;
+  border-radius: 4px;
+  padding: 12px;
+  margin: 16px;
+  color: #3c3;
+  font-size: 13px;
+}
+
+.error-help {
+  margin: 16px;
+  padding: 12px;
+  background: #f8f8f8;
+  border-radius: 4px;
+  font-size: 13px;
+  text-align: center;
+}
+
+.error-help code {
+  background: #fff;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 12px;
+}
+
+.section {
+  padding: 20px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.section:last-of-type {
+  border-bottom: none;
+}
+
+.section h2 {
+  margin: 0 0 16px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.status-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.status-label {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+.status-value {
+  font-size: 14px;
+  color: #1e1e1e;
+  font-weight: 600;
+}
+
+.status-online {
+  color: #22c55e;
+}
+
+.status-offline {
+  color: #ef4444;
+  font-weight: 600;
+  padding: 12px;
+  background: #fee;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.status-time {
+  font-size: 12px;
+  color: #666;
+  font-weight: 400;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+}
+
+.input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.help-text {
+  margin: 6px 0 0 0;
+  font-size: 12px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.2s;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  padding: 8px 16px;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-secondary:hover {
+  background: #e5e7eb;
+}
+
+.custom-classes-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  padding: 8px;
+}
+
+.custom-class-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.custom-class-item:last-child {
+  border-bottom: none;
+}
+
+.class-name {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 12px;
+  color: #4ec9b0;
+  background: #f8f8f8;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.class-source {
+  font-size: 11px;
+  color: #999;
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+
+.popup-footer {
+  padding: 16px 20px;
+  background: #f8f8f8;
+  border-top: 1px solid #e8e8e8;
+  display: flex;
+  justify-content: center;
+}
+

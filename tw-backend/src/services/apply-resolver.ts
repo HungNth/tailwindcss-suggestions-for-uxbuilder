@@ -39,6 +39,7 @@ export async function resolveApplyDirectives(
         applyValue: applyValues.join(' '),
         appliedUtilities: applyValues,
         sourceFile,
+        source: sourceFile,
       });
     }
   });
