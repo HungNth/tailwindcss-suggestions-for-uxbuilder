@@ -2,6 +2,138 @@
  * Utility functions for parsing and manipulating Tailwind class names in input fields
  */
 
+/**
+ * Known Tailwind CSS v4 variant prefixes.
+ * Used to detect and strip variant prefixes from class names during autocomplete.
+ */
+const KNOWN_VARIANTS = new Set([
+  // State variants
+  'hover',
+  'focus',
+  'active',
+  'visited',
+  'focus-within',
+  'focus-visible',
+  'disabled',
+  'enabled',
+  'checked',
+  'indeterminate',
+  'default',
+  'required',
+  'valid',
+  'invalid',
+  'in-range',
+  'out-of-range',
+  'placeholder-shown',
+  'autofill',
+  'read-only',
+
+  // Pseudo-element variants
+  'before',
+  'after',
+  'placeholder',
+  'file',
+  'marker',
+  'selection',
+  'first-line',
+  'first-letter',
+  'backdrop',
+
+  // Responsive variants
+  'sm',
+  'md',
+  'lg',
+  'xl',
+  '2xl',
+
+  // Dark mode
+  'dark',
+
+  // Group/peer variants
+  'group-hover',
+  'group-focus',
+  'group-active',
+  'group-visited',
+  'peer-hover',
+  'peer-focus',
+  'peer-checked',
+  'peer-disabled',
+
+  // Child variants
+  'first',
+  'last',
+  'only',
+  'odd',
+  'even',
+  'first-of-type',
+  'last-of-type',
+  'only-of-type',
+  'empty',
+
+  // Media variants
+  'motion-safe',
+  'motion-reduce',
+  'contrast-more',
+  'contrast-less',
+  'portrait',
+  'landscape',
+  'print',
+
+  // Misc
+  'open',
+  'closed',
+  'ltr',
+  'rtl',
+]);
+
+export interface VariantParseResult {
+  /** The variant prefix string including trailing colons (e.g. "hover:focus:") */
+  variants: string;
+  /** The utility class part after all variant prefixes (e.g. "bg-blue") */
+  utility: string;
+}
+
+/**
+ * Parse variant prefixes from a Tailwind class word.
+ *
+ * Examples:
+ *   "hover:bg-blue"       → { variants: "hover:", utility: "bg-blue" }
+ *   "sm:hover:text-"      → { variants: "sm:hover:", utility: "text-" }
+ *   "bg-blue-500"         → { variants: "", utility: "bg-blue-500" }
+ *   "hover:"              → { variants: "hover:", utility: "" }
+ *   "hover:focus:"        → { variants: "hover:focus:", utility: "" }
+ */
+export function parseVariantPrefix(word: string): VariantParseResult {
+  if (!word.includes(':')) {
+    return { variants: '', utility: word };
+  }
+
+  const parts = word.split(':');
+  let variantEnd = 0;
+
+  // Walk from the left: each part that is a known variant gets consumed
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (KNOWN_VARIANTS.has(parts[i])) {
+      variantEnd = i + 1;
+    } else {
+      // Stop at the first non-variant segment
+      break;
+    }
+  }
+
+  if (variantEnd === 0) {
+    return { variants: '', utility: word };
+  }
+
+  const variantParts = parts.slice(0, variantEnd);
+  const utilityParts = parts.slice(variantEnd);
+
+  return {
+    variants: variantParts.join(':') + ':',
+    utility: utilityParts.join(':'),
+  };
+}
+
 export interface WordPosition {
   word: string;
   start: number;

@@ -6,6 +6,7 @@ import {
   replaceCurrentWord,
   shouldShowAutocomplete,
   calculateDropdownPosition,
+  parseVariantPrefix,
   type WordPosition,
 } from '~/utils/class-parser.ts';
 
@@ -19,6 +20,7 @@ export class InputHandler {
   private searchCallback: (query: string) => Promise<TailwindClass[]>;
   private debounceTimer: number | null = null;
   private currentWordPosition: WordPosition | null = null;
+  private currentVariantPrefix = '';
   private isDropdownVisible = false;
 
   constructor(
@@ -65,15 +67,20 @@ export class InputHandler {
 
     const { word } = this.currentWordPosition;
 
-    // Check if we should show autocomplete
-    if (!shouldShowAutocomplete(word) || word.length < SEARCH_MIN_CHARS) {
+    // Parse variant prefix (e.g. "hover:bg-" → variants="hover:", utility="bg-")
+    const { variants, utility } = parseVariantPrefix(word);
+    this.currentVariantPrefix = variants;
+
+    // Use utility part for autocomplete check and search
+    // If user only typed variant prefix (e.g. "hover:") with no utility yet, hide dropdown
+    if (!shouldShowAutocomplete(utility) || utility.length < SEARCH_MIN_CHARS) {
       this.hideDropdown();
       return;
     }
 
-    // Debounce search
+    // Debounce search — send only the utility part as query
     this.debounceTimer = window.setTimeout(() => {
-      this.performSearch(word);
+      this.performSearch(utility);
     }, SEARCH_DEBOUNCE_MS);
   }
 
@@ -106,7 +113,11 @@ export class InputHandler {
     // Re-trigger search if there's a current word
     this.currentWordPosition = getCurrentWord(this.input);
     if (this.currentWordPosition && shouldShowAutocomplete(this.currentWordPosition.word)) {
-      this.performSearch(this.currentWordPosition.word);
+      const { variants, utility } = parseVariantPrefix(this.currentWordPosition.word);
+      this.currentVariantPrefix = variants;
+      if (utility.length >= SEARCH_MIN_CHARS) {
+        this.performSearch(utility);
+      }
     }
   }
 
@@ -144,7 +155,7 @@ export class InputHandler {
       this.autocomplete.updatePosition(position);
     }
 
-    this.autocomplete.update(results);
+    this.autocomplete.update(results, this.currentVariantPrefix);
   }
 
   /**
@@ -159,6 +170,7 @@ export class InputHandler {
 
   /**
    * Handle class selection from dropdown
+   * The className already includes the variant prefix (prepended by AutocompleteDropdown)
    */
   private handleSelect(className: string): void {
     if (this.currentWordPosition) {

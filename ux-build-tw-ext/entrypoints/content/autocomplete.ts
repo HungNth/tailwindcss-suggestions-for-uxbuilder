@@ -21,6 +21,7 @@ export class AutocompleteDropdown {
   private listElement: HTMLUListElement | null = null;
   private items: TailwindClass[] = [];
   private selectedIndex = 0;
+  private variantPrefix = '';
   private options: AutocompleteOptions;
 
   constructor(options: AutocompleteOptions) {
@@ -71,9 +72,12 @@ export class AutocompleteDropdown {
 
   /**
    * Update dropdown items and re-render
+   * @param items - The matching Tailwind classes
+   * @param variantPrefix - Active variant prefix (e.g. "hover:", "sm:hover:")
    */
-  public update(items: TailwindClass[]): void {
+  public update(items: TailwindClass[], variantPrefix = ''): void {
     this.items = items;
+    this.variantPrefix = variantPrefix;
     this.selectedIndex = 0;
     this.render();
   }
@@ -101,6 +105,7 @@ export class AutocompleteDropdown {
     this.listElement = null;
     this.items = [];
     this.selectedIndex = 0;
+    this.variantPrefix = '';
   }
 
   /**
@@ -174,10 +179,24 @@ export class AutocompleteDropdown {
         li.setAttribute('aria-selected', 'true');
       }
 
-      // Class name
+      // Class name — show with variant prefix if present
       const nameSpan = document.createElement('span');
       nameSpan.className = 'class-name';
-      nameSpan.textContent = item.name;
+
+      if (this.variantPrefix) {
+        // Show variant prefix in dimmer color, utility in bright color
+        const variantSpan = document.createElement('span');
+        variantSpan.className = 'class-variant';
+        variantSpan.textContent = this.variantPrefix;
+        nameSpan.appendChild(variantSpan);
+
+        const utilitySpan = document.createElement('span');
+        utilitySpan.textContent = item.name;
+        nameSpan.appendChild(utilitySpan);
+      } else {
+        nameSpan.textContent = item.name;
+      }
+
       li.appendChild(nameSpan);
 
       // CSS preview
@@ -219,11 +238,7 @@ export class AutocompleteDropdown {
    * Handle clicks outside the dropdown
    */
   private handleOutsideClick = (event: MouseEvent): void => {
-    if (
-      this.container &&
-      event.target instanceof Node &&
-      !this.container.contains(event.target)
-    ) {
+    if (this.container && event.target instanceof Node && !this.container.contains(event.target)) {
       this.options.onClose();
     }
   };
@@ -248,12 +263,13 @@ export class AutocompleteDropdown {
 
   /**
    * Select current item and trigger callback
+   * Prepends variant prefix to the selected class name
    */
   private selectCurrent(): void {
     if (this.items.length === 0) return;
     const selectedItem = this.items[this.selectedIndex];
     if (selectedItem) {
-      this.options.onSelect(selectedItem.name);
+      this.options.onSelect(this.variantPrefix + selectedItem.name);
     }
   }
 
@@ -370,8 +386,17 @@ export class AutocompleteDropdown {
         font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
       }
 
+      .class-variant {
+        color: #c586c0;
+        font-weight: 400;
+      }
+
       .autocomplete-item.selected .class-name {
         color: #ffffff;
+      }
+
+      .autocomplete-item.selected .class-variant {
+        color: #dca3dc;
       }
 
       .class-css {
