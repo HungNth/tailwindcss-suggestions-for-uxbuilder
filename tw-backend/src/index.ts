@@ -2,7 +2,7 @@ import { createApp } from './server';
 import { ClassStore } from './services/class-store';
 import { generateClassList } from './services/tailwind-generator';
 
-const PORT = typeof process.env.PORT === 'string' ? parseInt(process.env.PORT, 10) : 3000;
+const PORT = typeof process.env.PORT === 'string' ? parseInt(process.env.PORT, 10) : 3456;
 
 async function main() {
   const store = new ClassStore();

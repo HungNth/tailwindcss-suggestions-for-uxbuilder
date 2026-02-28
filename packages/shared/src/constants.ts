@@ -1,4 +1,4 @@
-export const DEFAULT_BACKEND_URL = 'http://localhost:3000';
+export const DEFAULT_BACKEND_URL = 'http://localhost:3456';
 export const BACKEND_URL = DEFAULT_BACKEND_URL; // Alias
 export const API_BASE = '/api';
 export const ENDPOINTS = {
