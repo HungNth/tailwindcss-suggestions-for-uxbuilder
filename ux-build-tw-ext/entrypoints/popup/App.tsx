@@ -41,10 +41,9 @@ function App() {
       // Get backend status
       console.log('[Popup] Requesting backend status...');
       const statusRequest: GetStatusRequest = { action: 'getStatus' };
-      const statusResponse = await browser.runtime.sendMessage<
-        GetStatusRequest,
-        GetStatusResponse
-      >(statusRequest);
+      const statusResponse = await browser.runtime.sendMessage<GetStatusRequest, GetStatusResponse>(
+        statusRequest
+      );
 
       console.log('[Popup] Status response:', statusResponse);
 
@@ -97,10 +96,9 @@ function App() {
         config,
       };
 
-      const response = await browser.runtime.sendMessage<
-        UpdateConfigRequest,
-        UpdateConfigResponse
-      >(request);
+      const response = await browser.runtime.sendMessage<UpdateConfigRequest, UpdateConfigResponse>(
+        request
+      );
 
       if ('data' in response) {
         setSaveMessage('Configuration saved successfully!');
@@ -251,4 +249,3 @@ function App() {
 }
 
 export default App;
-
