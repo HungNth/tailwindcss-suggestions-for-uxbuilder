@@ -1,8 +1,8 @@
 .popup-container {
-  width: 450px;
-  min-height: 500px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
-    sans-serif;
+  width: 28.125rem;
+  min-height: 31.25rem;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   color: #1e1e1e;
   background: #ffffff;
   padding: 0;
@@ -11,68 +11,68 @@
 .popup-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #ffffff;
-  padding: 20px;
+  padding: 1.25rem;
   text-align: center;
 }
 
 .popup-header h1 {
   margin: 0;
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 600;
 }
 
 .subtitle {
-  margin: 5px 0 0 0;
-  font-size: 13px;
+  margin: 0.3125rem 0 0 0;
+  font-size: 0.8125rem;
   opacity: 0.9;
 }
 
 .loading {
-  padding: 40px;
+  padding: 2.5rem;
   text-align: center;
   color: #666;
 }
 
 .error-banner {
   background: #fee;
-  border: 1px solid #fcc;
-  border-radius: 4px;
-  padding: 12px;
-  margin: 16px;
+  border: 0.0625rem solid #fcc;
+  border-radius: 0.25rem;
+  padding: 0.75rem;
+  margin: 1rem;
   color: #c33;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .success-banner {
   background: #efe;
-  border: 1px solid #cfc;
-  border-radius: 4px;
-  padding: 12px;
-  margin: 16px;
+  border: 0.0625rem solid #cfc;
+  border-radius: 0.25rem;
+  padding: 0.75rem;
+  margin: 1rem;
   color: #3c3;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .error-help {
-  margin: 16px;
-  padding: 12px;
+  margin: 1rem;
+  padding: 0.75rem;
   background: #f8f8f8;
-  border-radius: 4px;
-  font-size: 13px;
+  border-radius: 0.25rem;
+  font-size: 0.8125rem;
   text-align: center;
 }
 
 .error-help code {
   background: #fff;
-  padding: 2px 6px;
-  border-radius: 3px;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.1875rem;
   font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .section {
-  padding: 20px;
-  border-bottom: 1px solid #e8e8e8;
+  padding: 1.25rem;
+  border-bottom: 0.0625rem solid #e8e8e8;
 }
 
 .section:last-of-type {
@@ -80,8 +80,8 @@
 }
 
 .section h2 {
-  margin: 0 0 16px 0;
-  font-size: 15px;
+  margin: 0 0 1rem 0;
+  font-size: 0.9375rem;
   font-weight: 600;
   color: #333;
 }
@@ -89,23 +89,23 @@
 .status-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 0.75rem;
 }
 
 .status-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0.25rem;
 }
 
 .status-label {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: #666;
   font-weight: 500;
 }
 
 .status-value {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: #1e1e1e;
   font-weight: 600;
 }
@@ -117,36 +117,36 @@
 .status-offline {
   color: #ef4444;
   font-weight: 600;
-  padding: 12px;
+  padding: 0.75rem;
   background: #fee;
-  border-radius: 4px;
+  border-radius: 0.25rem;
   text-align: center;
 }
 
 .status-time {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: #666;
   font-weight: 400;
 }
 
 .form-group {
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 6px;
-  font-size: 13px;
+  margin-bottom: 0.375rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   color: #333;
 }
 
 .input {
   width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  font-size: 13px;
+  padding: 0.5rem 0.75rem;
+  border: 0.0625rem solid #d1d5db;
+  border-radius: 0.25rem;
+  font-size: 0.8125rem;
   font-family: 'Consolas', 'Monaco', monospace;
   transition: border-color 0.2s;
 }
@@ -154,32 +154,34 @@
 .input:focus {
   outline: none;
   border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 0.1875rem rgba(102, 126, 234, 0.1);
 }
 
 .help-text {
-  margin: 6px 0 0 0;
-  font-size: 12px;
+  margin: 0.375rem 0 0 0;
+  font-size: 0.75rem;
   color: #666;
   line-height: 1.4;
 }
 
 .btn-primary {
   width: 100%;
-  padding: 10px 16px;
+  padding: 0.625rem 1rem;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #ffffff;
   border: none;
-  border-radius: 4px;
-  font-size: 14px;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.1s, box-shadow 0.2s;
+  transition:
+    transform 0.1s,
+    box-shadow 0.2s;
 }
 
 .btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  transform: translateY(-0.0625rem);
+  box-shadow: 0 0.25rem 0.75rem rgba(102, 126, 234, 0.3);
 }
 
 .btn-primary:active {
@@ -187,12 +189,12 @@
 }
 
 .btn-secondary {
-  padding: 8px 16px;
+  padding: 0.5rem 1rem;
   background: #f3f4f6;
   color: #374151;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  font-size: 13px;
+  border: 0.0625rem solid #d1d5db;
+  border-radius: 0.25rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s;
@@ -203,19 +205,19 @@
 }
 
 .custom-classes-list {
-  max-height: 200px;
+  max-height: 12.5rem;
   overflow-y: auto;
-  border: 1px solid #e8e8e8;
-  border-radius: 4px;
-  padding: 8px;
+  border: 0.0625rem solid #e8e8e8;
+  border-radius: 0.25rem;
+  padding: 0.5rem;
 }
 
 .custom-class-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 0.5rem;
+  border-bottom: 0.0625rem solid #f0f0f0;
 }
 
 .custom-class-item:last-child {
@@ -224,24 +226,23 @@
 
 .class-name {
   font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: #4ec9b0;
   background: #f8f8f8;
-  padding: 2px 6px;
-  border-radius: 3px;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.1875rem;
 }
 
 .class-source {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: #999;
   font-family: 'Consolas', 'Monaco', monospace;
 }
 
 .popup-footer {
-  padding: 16px 20px;
+  padding: 1rem 1.25rem;
   background: #f8f8f8;
-  border-top: 1px solid #e8e8e8;
+  border-top: 0.0625rem solid #e8e8e8;
   display: flex;
   justify-content: center;
 }
-
