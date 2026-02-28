@@ -6,40 +6,61 @@ Monorepo for a Chrome extension that provides Tailwind CSS v4 class autocomplete
 and validation inside the Flatsome UX Builder (WordPress). Two packages:
 
 - `ux-build-tw-ext/` — Chrome extension (WXT + React + TypeScript)
-- `tw-backend/` — Node.js Express server that generates/serves Tailwind class data
+- `tw-backend/` — Node.js Express server for custom CSS classes only (optional)
 
-Communication: Extension ↔ local HTTP server (`http://localhost:3000`).
+**Architecture:** Offline-first. Standard Tailwind classes are bundled as JSON inside
+the extension (generated at build time by `npm run build:tw`). The backend server
+on `http://localhost:3456` is **optional** — only needed when the user configures a
+custom CSS file path for `@apply` class resolution.
 
 ## Monorepo Structure
 
 ```
 ux-builder-tw/                     # Root (npm workspaces)
+├── scripts/
+│   └── build-tw-classes.ts        # Build script: sample.html → JSON
 ├── ux-build-tw-ext/               # Chrome Extension (WXT framework)
 │   ├── entrypoints/
-│   │   ├── background.ts          # Service worker: message relay, caching
+│   │   ├── background.ts          # Service worker: offline search, optional backend
 │   │   ├── content.ts             # Content script: UX Builder detection, autocomplete
 │   │   ├── content/               # Content script modules
 │   │   └── popup/                 # React popup: settings panel
-│   ├── utils/                     # Extension utilities
+│   ├── utils/
+│   │   ├── class-store.ts         # In-memory search engine (loaded from bundled JSON)
+│   │   └── class-parser.ts        # Variant parsing utilities
+│   ├── public/data/
+│   │   └── tailwind-classes.json  # Generated build artifact (gitignored)
 │   ├── wxt.config.ts              # WXT configuration
 │   └── package.json
-├── tw-backend/                    # Express server
+├── tw-backend/                    # Express server (custom classes only)
 │   ├── src/
 │   │   ├── index.ts               # Entry point
 │   │   ├── server.ts              # Express app
-│   │   ├── routes/                # REST API endpoints
-│   │   └── services/              # TW class generator, CSS watcher, @apply resolver
+│   │   ├── routes/                # REST API: custom-classes, config, status
+│   │   └── services/              # CSS watcher, @apply resolver, class store
 │   ├── tests/                     # Vitest tests
 │   └── package.json
 └── packages/shared/               # Shared types & constants
 ```
 
+## Data Flow
+
+1. **Build time:** `npm run build:tw` compiles `tw-backend/sample.html` through
+   PostCSS+Tailwind → parses CSS → writes `ux-build-tw-ext/public/data/tailwind-classes.json`
+2. **Extension startup:** Background service worker loads bundled JSON into in-memory
+   class store (instant, no network)
+3. **Search/validate:** Fully local — queries the in-memory store (zero latency)
+4. **Custom classes (optional):** If backend is running, fetches custom `@apply` classes
+   from `http://localhost:3456/api/custom-classes` and merges into search results
+
 ## Build / Dev / Test Commands
 
 ### Root (monorepo)
+
 ```bash
 npm install                        # Install all workspace dependencies
-npm run build                      # Build all packages
+npm run build:tw                   # Generate tailwind-classes.json from sample.html
+npm run build                      # build:tw + build all workspaces
 npm run dev                        # Dev mode all packages (parallel)
 npm run lint                       # Lint all packages
 npm run lint:fix                   # Lint + autofix
@@ -47,6 +68,7 @@ npm run typecheck                  # TypeScript check all packages
 ```
 
 ### Extension (ux-build-tw-ext/)
+
 ```bash
 npm run dev                        # WXT dev mode (Chrome, hot reload)
 npm run dev:firefox                # WXT dev mode (Firefox)
@@ -56,7 +78,8 @@ npm run zip                        # Package for Chrome Web Store
 npm run compile                    # TypeScript check (tsc --noEmit)
 ```
 
-### Backend (tw-backend/)
+### Backend (tw-backend/) — port 3456
+
 ```bash
 npm run dev                        # Start with tsx watch (nodemon-like)
 npm run build                      # Compile TS → dist/
@@ -71,6 +94,7 @@ npm run test:coverage              # With coverage
 ## Code Style Guidelines
 
 ### TypeScript
+
 - Strict mode — no `any` (use `unknown` + type guards)
 - Functional patterns — no classes (exception: ClassStore for stateful pattern)
 - Explicit return types on exports; inferred OK internally
@@ -78,14 +102,17 @@ npm run test:coverage              # With coverage
 - No enums — use `as const` objects + union literal types
 
 ### Imports (order)
+
 1. Node built-ins (`node:fs/promises`)
 2. External packages (`express`, `chokidar`)
 3. Internal packages (`@ux-builder-tw/shared`)
 4. Relative imports (`../services/...`)
+
 - Use `import type` for type-only imports
 - Named imports preferred; no barrel files
 
 ### Naming
+
 - Files: `kebab-case.ts`
 - Variables/functions: `camelCase`
 - Types/Interfaces: `PascalCase`
@@ -94,35 +121,42 @@ npm run test:coverage              # With coverage
 - Tests: `<module>.test.ts`
 
 ### Formatting (Prettier)
+
 - 2 spaces, single quotes, trailing commas (ES5), semicolons, print width 100
 
 ### Error Handling
+
 - Never swallow errors — log or re-throw
 - Content scripts: catch + console.warn, never crash UX Builder
 - API responses: `{ data: T }` or `{ error: string, message: string }`
 - Use Result pattern or typed errors in backend services
 
 ### Chrome Extension Rules
+
 - Content matches: `*://*/wp-admin/post.php*`
 - Detect UX Builder: `app=uxbuilder&type=editor` in URL params
 - Target: `input.ng-pristine` in `ux-option.option-name-class`
 - Shadow DOM for injected UI (style isolation)
 - Angular compat: dispatch `input` + `change` events after `.value` mutation
 - Permissions: minimal (`activeTab`, `storage`)
+- host_permissions: `http://localhost:3456/*`
 - WXT auto-imports: `defineBackground`, `defineContentScript`, `browser`
 
-### REST API (tw-backend)
+### REST API (tw-backend) — port 3456
+
 - Base: `/api/`, JSON responses, CORS for `chrome-extension://`
-- GET for reads, POST for mutations
-- Query params: `?q=term&limit=50&offset=0`
+- 3 endpoints: `/api/custom-classes` (GET), `/api/config` (GET/POST), `/api/status` (GET)
+- Standard class search/validate removed — handled offline by extension
 
 ### Testing (Vitest)
+
 - Unit tests in `tw-backend/tests/`
 - Pattern: `describe('Module')` → `it('should X when Y')`
 - Prefer real TW processing over mocks
 - Snapshot tests for generated class lists
 
 ### Git
+
 - Conventional Commits: `feat(ext):`, `fix(backend):`, `chore(shared):`
 - Branch: `feat/description`, `fix/description`
 - Small, atomic commits
