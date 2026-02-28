@@ -88,7 +88,8 @@ function attachInputHandler(input: HTMLInputElement): void {
   try {
     const handler = new InputHandler(input, searchClasses);
     inputHandlers.set(input, handler);
-    console.log('[UX Builder TW] Attached handler to input:', input);
+
+    // console.log('[UX Builder TW] Attached handler to input with class:', input.classList[0]);
   } catch (error) {
     console.warn('[UX Builder TW] Failed to attach handler:', error);
   }
@@ -105,14 +106,14 @@ async function searchClasses(query: string): Promise<TailwindClass[]> {
       limit: 50,
     };
 
-    console.log('[UX Builder TW] Sending message to background:', request);
+    // console.log('[UX Builder TW] Sending message to background:', request);
 
     const response = await browser.runtime.sendMessage<
       SearchClassesRequest,
       SearchClassesResponse
     >(request);
 
-    console.log('[UX Builder TW] Received response from background:', response);
+    // console.log('[UX Builder TW] Received response from background:', response);
 
     // Handle undefined or null response
     if (!response) {
@@ -130,7 +131,7 @@ async function searchClasses(query: string): Promise<TailwindClass[]> {
       return [];
     }
 
-    console.log('[UX Builder TW] Returning', response.data.length, 'results');
+    // console.log('[UX Builder TW] Returning', response.data.length, 'results');
     return response.data;
   } catch (error) {
     console.error('[UX Builder TW] Failed to search classes:', error);
