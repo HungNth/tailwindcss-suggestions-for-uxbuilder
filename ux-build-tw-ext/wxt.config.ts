@@ -8,7 +8,7 @@ export default defineConfig({
     description: 'Tailwind CSS class autocomplete and validation for Flatsome UX Builder',
     version: '0.1.0',
     permissions: ['activeTab', 'storage'],
-    host_permissions: ['http://localhost:3000/*'],
+    host_permissions: ['http://localhost:3456/*'],
     action: {
       default_title: 'UX Builder Tailwind CSS Settings',
     },

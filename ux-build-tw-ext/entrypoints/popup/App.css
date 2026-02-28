@@ -117,10 +117,24 @@
 .status-offline {
   color: #ef4444;
   font-weight: 600;
-  padding: 0.75rem;
-  background: #fee;
+}
+
+.info-banner {
+  background: #eff6ff;
+  border: 0.0625rem solid #bfdbfe;
   border-radius: 0.25rem;
-  text-align: center;
+  padding: 0.75rem;
+  color: #1e40af;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.info-banner code {
+  background: #dbeafe;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.1875rem;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.75rem;
 }
 
 .status-time {

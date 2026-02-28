@@ -13,8 +13,10 @@ import type {
 import './App.css';
 
 /**
- * Popup settings panel for UX Builder Tailwind CSS extension
- * Shows backend status, custom classes, and configuration options
+ * Popup settings panel for UX Builder Tailwind CSS extension.
+ *
+ * Shows bundled class count (always available offline), backend connection
+ * status, custom classes, and configuration options.
  */
 function App() {
   const [status, setStatus] = useState<ServerStatus | null>(null);
@@ -30,57 +32,43 @@ function App() {
   }, []);
 
   /**
-   * Load backend status and custom classes
+   * Load status and custom classes from background script
    */
   const loadData = async (): Promise<void> => {
-    console.log('[Popup] Loading data...');
     setLoading(true);
     setError(null);
 
     try {
-      // Get backend status
-      console.log('[Popup] Requesting backend status...');
       const statusRequest: GetStatusRequest = { action: 'getStatus' };
       const statusResponse = await browser.runtime.sendMessage<GetStatusRequest, GetStatusResponse>(
         statusRequest
       );
 
-      console.log('[Popup] Status response:', statusResponse);
-
       if ('data' in statusResponse && statusResponse.data) {
-        console.log('[Popup] Got status data:', statusResponse.data);
         setStatus(statusResponse.data);
         setCssFilePath(statusResponse.data.config?.cssFilePath || '');
       } else {
-        console.error('[Popup] Status error:', statusResponse);
-        setError(statusResponse.message || 'Failed to get backend status');
+        setError(statusResponse.message || 'Failed to get status');
       }
 
-      // Get custom classes
-      console.log('[Popup] Requesting custom classes...');
       const customRequest: GetCustomClassesRequest = { action: 'getCustomClasses' };
       const customResponse = await browser.runtime.sendMessage<
         GetCustomClassesRequest,
         GetCustomClassesResponse
       >(customRequest);
 
-      console.log('[Popup] Custom classes response:', customResponse);
-
       if ('data' in customResponse && customResponse.data) {
-        console.log('[Popup] Got custom classes:', customResponse.data.length);
         setCustomClasses(customResponse.data);
       }
     } catch (err) {
-      console.error('[Popup] Error loading data:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
-      console.log('[Popup] Loading complete');
     }
   };
 
   /**
-   * Save configuration
+   * Save configuration to backend
    */
   const handleSaveConfig = async (): Promise<void> => {
     setSaveMessage(null);
@@ -102,7 +90,6 @@ function App() {
 
       if ('data' in response) {
         setSaveMessage('Configuration saved successfully!');
-        // Reload data to reflect changes
         setTimeout(() => {
           loadData();
           setSaveMessage(null);
@@ -115,19 +102,15 @@ function App() {
     }
   };
 
-  /**
-   * Format timestamp
-   */
   const formatTime = (timestamp: number | string): string => {
     const time = typeof timestamp === 'string' ? Date.parse(timestamp) : timestamp;
     return new Date(time).toLocaleString();
   };
 
-  console.log('[Popup] Render - loading:', loading, 'error:', error, 'status:', status);
+  const isBackendOnline = status?.backendOnline ?? false;
 
   // Loading state
   if (loading) {
-    console.log('[Popup] Showing loading state');
     return (
       <div className="popup-container">
         <div className="loading">Loading...</div>
@@ -135,25 +118,6 @@ function App() {
     );
   }
 
-  // Error state
-  if (error && !status) {
-    console.log('[Popup] Showing error state');
-    return (
-      <div className="popup-container">
-        <div className="error-banner">
-          <strong>Error:</strong> {error}
-        </div>
-        <p className="error-help">
-          Make sure the backend server is running at <code>http://localhost:3000</code>
-        </p>
-        <button onClick={loadData} className="btn-primary">
-          Retry
-        </button>
-      </div>
-    );
-  }
-
-  console.log('[Popup] Showing main content');
   return (
     <div className="popup-container">
       <header className="popup-header">
@@ -169,58 +133,78 @@ function App() {
 
       {saveMessage && <div className="success-banner">{saveMessage}</div>}
 
-      {/* Backend Status */}
+      {/* Extension Status — always shows, works offline */}
       <section className="section">
-        <h2>Backend Status</h2>
-        {status ? (
-          <div className="status-grid">
-            <div className="status-item">
-              <span className="status-label">Server:</span>
-              <span className="status-value status-online">Online</span>
-            </div>
-            <div className="status-item">
-              <span className="status-label">Utility Classes:</span>
-              <span className="status-value">
-                {(status.tailwindClassCount ?? status.totalClasses ?? 0).toLocaleString()}
-              </span>
-            </div>
-            <div className="status-item">
-              <span className="status-label">Custom Classes:</span>
-              <span className="status-value">
-                {status.customClassCount ?? status.totalCustomClasses ?? 0}
-              </span>
-            </div>
-            <div className="status-item">
-              <span className="status-label">Last Updated:</span>
-              <span className="status-value status-time">{formatTime(status.lastUpdated)}</span>
-            </div>
+        <h2>Status</h2>
+        <div className="status-grid">
+          <div className="status-item">
+            <span className="status-label">Bundled Classes:</span>
+            <span className="status-value">
+              {(status?.tailwindClassCount ?? status?.totalClasses ?? 0).toLocaleString()}
+            </span>
           </div>
-        ) : (
-          <div className="status-offline">Offline</div>
-        )}
+          <div className="status-item">
+            <span className="status-label">Backend:</span>
+            <span
+              className={`status-value ${isBackendOnline ? 'status-online' : 'status-offline'}`}
+            >
+              {isBackendOnline ? 'Online' : 'Offline'}
+            </span>
+          </div>
+          <div className="status-item">
+            <span className="status-label">Custom Classes:</span>
+            <span className="status-value">
+              {status?.customClassCount ?? status?.totalCustomClasses ?? 0}
+            </span>
+          </div>
+          <div className="status-item">
+            <span className="status-label">Last Updated:</span>
+            <span className="status-value status-time">
+              {status ? formatTime(status.lastUpdated) : 'N/A'}
+            </span>
+          </div>
+        </div>
       </section>
 
-      {/* Configuration */}
+      {/* Offline mode info */}
+      {!isBackendOnline && (
+        <section className="section">
+          <div className="info-banner">
+            Running in offline mode. Standard Tailwind classes are available. Start the backend
+            server at <code>http://localhost:3456</code> to use custom CSS classes.
+          </div>
+        </section>
+      )}
+
+      {/* Configuration — only useful when backend is online */}
       <section className="section">
-        <h2>Configuration</h2>
-        <div className="form-group">
-          <label htmlFor="cssFilePath">CSS File Path (Optional)</label>
-          <input
-            type="text"
-            id="cssFilePath"
-            className="input"
-            placeholder="/path/to/custom.css"
-            value={cssFilePath}
-            onChange={(e) => setCssFilePath(e.target.value)}
-          />
+        <h2>Custom CSS Configuration</h2>
+        {isBackendOnline ? (
+          <>
+            <div className="form-group">
+              <label htmlFor="cssFilePath">CSS File Path (Optional)</label>
+              <input
+                type="text"
+                id="cssFilePath"
+                className="input"
+                placeholder="/path/to/custom.css"
+                value={cssFilePath}
+                onChange={(e) => setCssFilePath(e.target.value)}
+              />
+              <p className="help-text">
+                Path to your custom CSS file with @apply directives. Leave empty to use only
+                Tailwind utilities.
+              </p>
+            </div>
+            <button onClick={handleSaveConfig} className="btn-primary">
+              Save Configuration
+            </button>
+          </>
+        ) : (
           <p className="help-text">
-            Path to your custom CSS file with @apply directives. Leave empty to use only Tailwind
-            utilities.
+            Connect the backend server to configure custom CSS file watching.
           </p>
-        </div>
-        <button onClick={handleSaveConfig} className="btn-primary">
-          Save Configuration
-        </button>
+        )}
       </section>
 
       {/* Custom Classes */}

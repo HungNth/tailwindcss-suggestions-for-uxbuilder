@@ -70,6 +70,8 @@ export interface ServerStatus {
   customClassCount: number; // Alias for totalCustomClasses
   watchedFile: string | null;
   lastUpdated: string | number;
+  /** Whether the backend server is reachable (extension works offline without it) */
+  backendOnline?: boolean;
   config: BackendConfig;
 }
 

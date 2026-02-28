@@ -2,8 +2,6 @@ export const DEFAULT_BACKEND_URL = 'http://localhost:3456';
 export const BACKEND_URL = DEFAULT_BACKEND_URL; // Alias
 export const API_BASE = '/api';
 export const ENDPOINTS = {
-  CLASSES: '/api/classes',
-  CLASSES_SEARCH: '/api/classes/search',
   CUSTOM_CLASSES: '/api/custom-classes',
   STATUS: '/api/status',
   CONFIG: '/api/config',
@@ -29,4 +27,3 @@ export const DEFAULT_SEARCH_LIMIT = 50;
 export const DEBOUNCE_MS = 150;
 export const SEARCH_DEBOUNCE_MS = DEBOUNCE_MS; // Alias
 export const SEARCH_MIN_CHARS = 1;
-

@@ -1,25 +1,16 @@
 import { createApp } from './server';
 import { ClassStore } from './services/class-store';
-import { generateClassList } from './services/tailwind-generator';
 
 const PORT = typeof process.env.PORT === 'string' ? parseInt(process.env.PORT, 10) : 3456;
 
-async function main() {
+async function main(): Promise<void> {
   const store = new ClassStore();
-
-  // Generate Tailwind utility classes on startup
-  console.warn('[tw-backend] Generating Tailwind CSS v4 utility classes...');
-  const classes = await generateClassList();
-  store.setClasses(classes);
-  console.warn(`[tw-backend] Loaded ${classes.length} utility classes`);
-
-  // Make store available to routes
   const app = createApp();
   app.locals.store = store;
 
   const server = app.listen(PORT, '0.0.0.0', () => {
-    console.warn(`[tw-backend] Server running on http://localhost:${PORT}`);
-    console.warn(`[tw-backend] Server address:`, server.address());
+    console.warn(`[tw-backend] Custom class server running on http://localhost:${PORT}`);
+    console.warn(`[tw-backend] Endpoints: /api/custom-classes, /api/config, /api/status`);
   });
 
   server.on('error', (err) => {

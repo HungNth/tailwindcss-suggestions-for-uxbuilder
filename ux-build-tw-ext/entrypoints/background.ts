@@ -12,52 +12,80 @@ import type {
   UpdateConfigResponse,
   ApiResponse,
   TailwindClass,
-  ValidationResult,
   CustomClass,
-  ServerStatus,
   BackendConfig,
 } from '@ux-builder-tw/shared';
 import { BACKEND_URL, CACHE_TTL_MS } from '@ux-builder-tw/shared';
+import {
+  setStandardClasses,
+  setCustomClasses,
+  searchClasses,
+  searchCustom,
+  validateClass,
+  getCustomClasses,
+  getStats,
+} from '~/utils/class-store';
 
 /**
- * Background service worker for UX Builder Tailwind CSS extension
- * Relays messages between content scripts and local backend server
- * Implements caching for better performance
+ * Background service worker for UX Builder Tailwind CSS extension.
+ *
+ * Architecture: offline-first
+ * - Standard Tailwind classes are loaded from bundled JSON (zero network)
+ * - Custom classes (@apply) are fetched from backend when available
+ * - Search and validation are fully local, instant operations
  */
 export default defineBackground(() => {
   console.log('[UX Builder TW] Background service worker started');
 
-  // Setup message listener
+  loadBundledClasses();
   browser.runtime.onMessage.addListener(handleMessage);
-
-  // Check backend status on startup
   checkBackendStatus();
 });
 
-/**
- * Cache for class search results
- */
+/** Whether the backend server is currently reachable */
+let backendOnline = false;
+
+/** Shorter TTL for refreshing custom classes during search (30s) */
+const CUSTOM_REFRESH_INTERVAL_MS = 30 * 1000;
+
+/** Timer handle for periodic custom class refresh */
+let customRefreshTimer: ReturnType<typeof setInterval> | null = null;
+
+/** Cache for custom classes (only thing still fetched from network) */
 interface CacheEntry<T> {
   data: T;
   timestamp: number;
 }
-
-const searchCache = new Map<string, CacheEntry<TailwindClass[]>>();
-const validationCache = new Map<string, CacheEntry<ValidationResult[]>>();
 let customClassesCache: CacheEntry<CustomClass[]> | null = null;
-let statusCache: CacheEntry<ServerStatus> | null = null;
+
+/**
+ * Load standard Tailwind classes from bundled JSON in extension assets
+ */
+async function loadBundledClasses(): Promise<void> {
+  try {
+    // Cast needed: WXT's PublicPath type is auto-generated and may not include data/ files
+    const url: string = browser.runtime.getURL('/data/tailwind-classes.json');
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to load bundled classes: ${response.status}`);
+    }
+    const data: { version: string; totalClasses: number; classes: TailwindClass[] } =
+      await response.json();
+    setStandardClasses(data.classes);
+    console.log(`[UX Builder TW] Loaded ${data.totalClasses} bundled classes (v${data.version})`);
+  } catch (error) {
+    console.error('[UX Builder TW] Failed to load bundled classes:', error);
+  }
+}
 
 /**
  * Handle messages from content scripts and popup
  */
 function handleMessage(
   message: ExtensionMessage,
-  sender: any,
+  _sender: unknown,
   sendResponse: (response: ExtensionMessage) => void
 ): boolean {
-  console.log('[UX Builder TW] Received message:', message.action);
-
-  // Handle message asynchronously
   (async () => {
     let response: ExtensionMessage;
 
@@ -67,7 +95,7 @@ function handleMessage(
         break;
 
       case 'validateClasses':
-        response = await handleValidateClasses(message as ValidateClassesRequest);
+        response = handleValidateClasses(message as ValidateClassesRequest);
         break;
 
       case 'getCustomClasses':
@@ -87,7 +115,7 @@ function handleMessage(
         response = {
           action: 'error',
           error: 'Unknown action',
-          message: `Action "${(message as any).action}" is not supported`,
+          message: `Action "${(message as ExtensionMessage).action}" is not supported`,
         } as ExtensionMessage;
     }
 
@@ -99,139 +127,94 @@ function handleMessage(
 }
 
 /**
- * Handle search classes request
+ * Search classes — combines standard + custom results, prefix matches first.
+ * Refreshes custom classes from backend if cache is stale and backend is online.
  */
-async function handleSearchClasses(
-  request: SearchClassesRequest
-): Promise<SearchClassesResponse> {
+async function handleSearchClasses(request: SearchClassesRequest): Promise<SearchClassesResponse> {
   const { query, limit = 50, offset = 0 } = request;
-  const cacheKey = `${query}:${limit}:${offset}`;
 
-  console.log('[UX Builder TW] Searching classes with query:', query);
-
-  // Check cache
-  const cached = searchCache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-    console.log('[UX Builder TW] Returning cached search results:', cached.data.length);
-    return { action: 'searchClasses', data: cached.data };
+  // If backend is online and custom cache is stale, refresh before searching
+  if (backendOnline && isCustomCacheStale()) {
+    await refreshCustomClassesFromBackend();
   }
 
-  try {
-    const url = `${BACKEND_URL}/api/classes/search?q=${encodeURIComponent(query)}&limit=${limit}&offset=${offset}`;
-    console.log('[UX Builder TW] Fetching from:', url);
-    const response = await fetch(url);
+  const standardResults = searchClasses(query, limit, offset);
+  const customResults = searchCustom(query, limit);
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
+  // Convert custom classes to TailwindClass shape for uniform response
+  const customAsTailwind: TailwindClass[] = customResults.map((c) => ({
+    name: c.name,
+    css: c.css,
+    category: 'custom',
+  }));
 
-    const apiResponse: ApiResponse<TailwindClass[]> = await response.json();
-
-    if ('error' in apiResponse) {
-      console.warn('[UX Builder TW] API error:', apiResponse.error);
-      return {
-        action: 'searchClasses',
-        error: apiResponse.error,
-        message: apiResponse.message,
-      };
-    }
-
-    console.log('[UX Builder TW] Found', apiResponse.data.length, 'classes');
-
-    // Cache result
-    searchCache.set(cacheKey, {
-      data: apiResponse.data,
-      timestamp: Date.now(),
-    });
-
-    return { action: 'searchClasses', data: apiResponse.data };
-  } catch (error) {
-    console.error('[UX Builder TW] Search failed:', error);
-    return {
-      action: 'searchClasses',
-      error: 'NETWORK_ERROR',
-      message: `Failed to connect to backend: ${error instanceof Error ? error.message : 'Unknown error'}`,
-    };
-  }
+  const combined = [...standardResults, ...customAsTailwind].slice(0, limit);
+  return { action: 'searchClasses', data: combined };
 }
 
 /**
- * Handle validate classes request
+ * Validate classes — SYNC, no network, instant
  */
-async function handleValidateClasses(
-  request: ValidateClassesRequest
-): Promise<ValidateClassesResponse> {
+function handleValidateClasses(request: ValidateClassesRequest): ValidateClassesResponse {
   const { classNames } = request;
-  const cacheKey = classNames.join(',');
+  const results = classNames.map((className: string) => ({
+    className,
+    valid: validateClass(className),
+  }));
+  return { action: 'validateClasses', data: results };
+}
 
-  // Check cache
-  const cached = validationCache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-    console.log('[UX Builder TW] Returning cached validation results');
-    return { action: 'validateClasses', data: cached.data };
-  }
+/**
+ * Check if the custom classes cache is stale (older than CUSTOM_REFRESH_INTERVAL_MS)
+ */
+function isCustomCacheStale(): boolean {
+  if (!customClassesCache) return true;
+  return Date.now() - customClassesCache.timestamp > CUSTOM_REFRESH_INTERVAL_MS;
+}
 
+/**
+ * Fetch custom classes from the backend and update the local store + cache.
+ * Silently fails — search still works with whatever is in the local store.
+ */
+async function refreshCustomClassesFromBackend(): Promise<void> {
   try {
-    const url = `${BACKEND_URL}/api/classes/validate`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ classNames }),
-    });
+    const url = `${BACKEND_URL}/api/custom-classes`;
+    const response = await fetch(url);
+    if (!response.ok) return;
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
+    const apiResponse: ApiResponse<CustomClass[]> = await response.json();
+    if ('error' in apiResponse) return;
 
-    const apiResponse: ApiResponse<ValidationResult[]> = await response.json();
-
-    if ('error' in apiResponse) {
-      return {
-        action: 'validateClasses',
-        error: apiResponse.error,
-        message: apiResponse.message,
-      };
-    }
-
-    // Cache result
-    validationCache.set(cacheKey, {
-      data: apiResponse.data,
-      timestamp: Date.now(),
-    });
-
-    return { action: 'validateClasses', data: apiResponse.data };
-  } catch (error) {
-    console.error('[UX Builder TW] Validation failed:', error);
-    return {
-      action: 'validateClasses',
-      error: 'NETWORK_ERROR',
-      message: `Failed to connect to backend: ${error instanceof Error ? error.message : 'Unknown error'}`,
-    };
+    setCustomClasses(apiResponse.data);
+    customClassesCache = { data: apiResponse.data, timestamp: Date.now() };
+  } catch {
+    // Silently fail — local store still has whatever was last loaded
   }
 }
 
 /**
- * Handle get custom classes request
+ * Get custom classes — ASYNC, fetches from backend if available
+ * Falls back to locally cached custom classes when backend is offline
  */
 async function handleGetCustomClasses(
-  request: GetCustomClassesRequest
+  _request: GetCustomClassesRequest
 ): Promise<GetCustomClassesResponse> {
-  // Check cache
+  // Return cache if still fresh
   if (customClassesCache && Date.now() - customClassesCache.timestamp < CACHE_TTL_MS) {
-    console.log('[UX Builder TW] Returning cached custom classes');
     return { action: 'getCustomClasses', data: customClassesCache.data };
+  }
+
+  // Return local store if backend is offline
+  if (!backendOnline) {
+    return { action: 'getCustomClasses', data: getCustomClasses() };
   }
 
   try {
     const url = `${BACKEND_URL}/api/custom-classes`;
     const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const apiResponse: ApiResponse<CustomClass[]> = await response.json();
-
     if ('error' in apiResponse) {
       return {
         action: 'getCustomClasses',
@@ -240,136 +223,143 @@ async function handleGetCustomClasses(
       };
     }
 
-    // Cache result
-    customClassesCache = {
-      data: apiResponse.data,
-      timestamp: Date.now(),
-    };
-
+    // Update local store and cache
+    setCustomClasses(apiResponse.data);
+    customClassesCache = { data: apiResponse.data, timestamp: Date.now() };
     return { action: 'getCustomClasses', data: apiResponse.data };
   } catch (error) {
     console.error('[UX Builder TW] Get custom classes failed:', error);
-    return {
-      action: 'getCustomClasses',
-      error: 'NETWORK_ERROR',
-      message: `Failed to connect to backend: ${error instanceof Error ? error.message : 'Unknown error'}`,
-    };
+    return { action: 'getCustomClasses', data: getCustomClasses() };
   }
 }
 
 /**
- * Handle get status request
+ * Get status — returns local stats + backend connection status
  */
-async function handleGetStatus(request: GetStatusRequest): Promise<GetStatusResponse> {
-  // Check cache
-  if (statusCache && Date.now() - statusCache.timestamp < CACHE_TTL_MS) {
-    console.log('[UX Builder TW] Returning cached status');
-    return { action: 'getStatus', data: statusCache.data };
-  }
+async function handleGetStatus(_request: GetStatusRequest): Promise<GetStatusResponse> {
+  const stats = getStats();
+  let backendInfo = {
+    running: false,
+    watchedFile: null as string | null,
+    totalCustom: stats.totalCustom,
+    config: {} as Record<string, unknown>,
+  };
 
   try {
-    const url = `${BACKEND_URL}/api/status`;
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    const response = await fetch(`${BACKEND_URL}/api/status`);
+    if (response.ok) {
+      const apiResponse = await response.json();
+      if ('data' in apiResponse) {
+        backendOnline = true;
+        if (!customRefreshTimer) startCustomClassPolling();
+        backendInfo = {
+          running: true,
+          watchedFile: apiResponse.data.watchedFile,
+          totalCustom: apiResponse.data.totalCustomClasses || stats.totalCustom,
+          config: apiResponse.data.config || {},
+        };
+      }
     }
-
-    const apiResponse: ApiResponse<ServerStatus> = await response.json();
-
-    if ('error' in apiResponse) {
-      return {
-        action: 'getStatus',
-        error: apiResponse.error,
-        message: apiResponse.message,
-      };
-    }
-
-    // Cache result
-    statusCache = {
-      data: apiResponse.data,
-      timestamp: Date.now(),
-    };
-
-    return { action: 'getStatus', data: apiResponse.data };
-  } catch (error) {
-    console.error('[UX Builder TW] Get status failed:', error);
-    return {
-      action: 'getStatus',
-      error: 'NETWORK_ERROR',
-      message: `Failed to connect to backend: ${error instanceof Error ? error.message : 'Unknown error'}`,
-    };
+  } catch {
+    backendOnline = false;
+    stopCustomClassPolling();
   }
+
+  return {
+    action: 'getStatus',
+    data: {
+      running: true,
+      tailwindVersion: '4.0',
+      totalClasses: stats.totalStandard,
+      tailwindClassCount: stats.totalStandard,
+      totalCustomClasses: backendInfo.totalCustom,
+      customClassCount: backendInfo.totalCustom,
+      watchedFile: backendInfo.watchedFile,
+      lastUpdated: new Date().toISOString(),
+      backendOnline: backendInfo.running,
+      config: backendInfo.config,
+    },
+  };
 }
 
 /**
- * Handle update config request
+ * Update config — sends config to backend, then refreshes custom classes
  */
-async function handleUpdateConfig(
-  request: UpdateConfigRequest
-): Promise<UpdateConfigResponse> {
+async function handleUpdateConfig(request: UpdateConfigRequest): Promise<UpdateConfigResponse> {
   const { config } = request;
 
   try {
-    const url = `${BACKEND_URL}/api/config`;
-    const response = await fetch(url, {
+    const response = await fetch(`${BACKEND_URL}/api/config`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(config),
     });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const apiResponse: ApiResponse<BackendConfig> = await response.json();
-
     if ('error' in apiResponse) {
-      return {
-        action: 'updateConfig',
-        error: apiResponse.error,
-        message: apiResponse.message,
-      };
+      return { action: 'updateConfig', error: apiResponse.error, message: apiResponse.message };
     }
 
-    // Clear caches after config update
-    clearAllCaches();
+    // Clear custom class cache and re-fetch
+    customClassesCache = null;
+    backendOnline = true;
+    await handleGetCustomClasses({ action: 'getCustomClasses' });
 
     return { action: 'updateConfig', data: apiResponse.data };
-  } catch (error) {
-    console.error('[UX Builder TW] Update config failed:', error);
+  } catch {
     return {
       action: 'updateConfig',
       error: 'NETWORK_ERROR',
-      message: `Failed to connect to backend: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      message: `Failed to connect to backend at ${BACKEND_URL}. Make sure the backend server is running.`,
     };
   }
 }
 
 /**
- * Check backend status on startup
+ * Check backend status on startup and load custom classes if available.
+ * Starts periodic custom class refresh if backend is online.
  */
 async function checkBackendStatus(): Promise<void> {
   try {
-    const status = await handleGetStatus({ action: 'getStatus' });
-    if ('data' in status) {
-      console.log('[UX Builder TW] Backend is online:', status.data);
+    const response = await fetch(`${BACKEND_URL}/api/status`);
+    if (response.ok) {
+      backendOnline = true;
+      console.log('[UX Builder TW] Backend is online');
+      // Pre-fetch custom classes
+      await handleGetCustomClasses({ action: 'getCustomClasses' });
+      startCustomClassPolling();
     } else {
-      console.warn('[UX Builder TW] Backend is offline or unreachable');
+      backendOnline = false;
+      console.log('[UX Builder TW] Backend offline (extension works offline)');
     }
-  } catch (error) {
-    console.error('[UX Builder TW] Failed to check backend status:', error);
+  } catch {
+    backendOnline = false;
+    console.log('[UX Builder TW] Backend unreachable (extension works offline)');
   }
 }
 
 /**
- * Clear all caches
+ * Start periodic polling for custom classes from the backend.
+ * Polling runs every CUSTOM_REFRESH_INTERVAL_MS when backend is online.
  */
-function clearAllCaches(): void {
-  searchCache.clear();
-  validationCache.clear();
-  customClassesCache = null;
-  statusCache = null;
-  console.log('[UX Builder TW] All caches cleared');
+function startCustomClassPolling(): void {
+  if (customRefreshTimer) return; // Already running
+  customRefreshTimer = setInterval(async () => {
+    if (!backendOnline) {
+      stopCustomClassPolling();
+      return;
+    }
+    await refreshCustomClassesFromBackend();
+  }, CUSTOM_REFRESH_INTERVAL_MS);
 }
 
+/**
+ * Stop periodic custom class polling.
+ */
+function stopCustomClassPolling(): void {
+  if (customRefreshTimer) {
+    clearInterval(customRefreshTimer);
+    customRefreshTimer = null;
+  }
+}
