@@ -125,10 +125,10 @@ export class InputHandler {
    * Perform search and show dropdown
    */
   private async performSearch(query: string): Promise<void> {
-    console.log('[UX Builder TW] Searching for:', query);
+    // console.log('[UX Builder TW] Searching for:', query);
     try {
       const results = await this.searchCallback(query);
-      console.log('[UX Builder TW] Search results:', results.length, 'classes');
+    //   console.log('[UX Builder TW] Search results:', results.length, 'classes');
 
       if (results.length > 0) {
         this.showDropdown(results);
