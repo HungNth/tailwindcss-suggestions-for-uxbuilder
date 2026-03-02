@@ -1,7 +1,12 @@
-import type { TailwindClass, SearchClassesRequest, SearchClassesResponse } from '@ux-builder-tw/shared';
+import type {
+  TailwindClass,
+  SearchClassesRequest,
+  SearchClassesResponse,
+} from '@ux-builder-tw/shared';
 import { UX_BUILDER_SELECTOR } from '@ux-builder-tw/shared';
 import { isUxBuilderPage, waitForUxBuilder } from './content/detector';
 import { InputHandler } from './content/input-handler';
+import { ExpandButton } from './content/expand-input';
 
 /**
  * Content script for UX Builder Tailwind CSS autocomplete
@@ -16,6 +21,7 @@ export default defineContentScript({
  * Active input handlers (for cleanup)
  */
 const inputHandlers: Map<HTMLInputElement, InputHandler> = new Map();
+const expandButtons: Map<HTMLInputElement, ExpandButton> = new Map();
 
 /**
  * Initialize content script
@@ -89,6 +95,10 @@ function attachInputHandler(input: HTMLInputElement): void {
     const handler = new InputHandler(input, searchClasses);
     inputHandlers.set(input, handler);
 
+    // Also attach expand button
+    const expandBtn = new ExpandButton(input, searchClasses);
+    expandButtons.set(input, expandBtn);
+
     // console.log('[UX Builder TW] Attached handler to input with class:', input.classList[0]);
   } catch (error) {
     console.warn('[UX Builder TW] Failed to attach handler:', error);
@@ -108,10 +118,9 @@ async function searchClasses(query: string): Promise<TailwindClass[]> {
 
     // console.log('[UX Builder TW] Sending message to background:', request);
 
-    const response = await browser.runtime.sendMessage<
-      SearchClassesRequest,
-      SearchClassesResponse
-    >(request);
+    const response = await browser.runtime.sendMessage<SearchClassesRequest, SearchClassesResponse>(
+      request
+    );
 
     // console.log('[UX Builder TW] Received response from background:', response);
 
@@ -145,4 +154,6 @@ async function searchClasses(query: string): Promise<TailwindClass[]> {
 window.addEventListener('unload', () => {
   inputHandlers.forEach((handler) => handler.destroy());
   inputHandlers.clear();
+  expandButtons.forEach((btn) => btn.destroy());
+  expandButtons.clear();
 });
