@@ -141,10 +141,15 @@ export interface WordPosition {
 }
 
 /**
- * Get the current word at the cursor position in an input element
+ * Type for input elements that support text manipulation
+ */
+export type TextInputElement = HTMLInputElement | HTMLTextAreaElement;
+
+/**
+ * Get the current word at the cursor position in an input/textarea element
  * Classes are space-separated, so we find the word boundaries
  */
-export function getCurrentWord(input: HTMLInputElement): WordPosition | null {
+export function getCurrentWord(input: TextInputElement): WordPosition | null {
   const value = input.value;
   const cursorPos = input.selectionStart ?? value.length;
 
@@ -173,11 +178,12 @@ export function getCurrentWord(input: HTMLInputElement): WordPosition | null {
 }
 
 /**
- * Replace the current word at cursor position with a new class name
- * Preserves other classes and maintains proper spacing
+ * Replace the current word at cursor position with a new class name.
+ * Always appends a trailing space so the user can immediately type the next class.
+ * Preserves other classes and maintains proper spacing.
  */
 export function replaceCurrentWord(
-  input: HTMLInputElement,
+  input: TextInputElement,
   newWord: string,
   wordPosition: WordPosition
 ): void {
@@ -188,27 +194,14 @@ export function replaceCurrentWord(
   const before = value.substring(0, start);
   const after = value.substring(end);
 
-  // Handle spacing
-  let newValue: string;
-  let newCursorPos: number;
+  // Always place a space after the inserted word so the user can type the next class.
+  // - `before` already ends with a space (or is empty), so no prefix space needed.
+  // - Strip any leading spaces from `after` to avoid double-spacing.
+  const afterTrimmed = after.trimStart();
+  const newValue = before + newWord + ' ' + afterTrimmed;
 
-  if (before.length === 0 && after.length === 0) {
-    // Only word in input
-    newValue = newWord;
-    newCursorPos = newWord.length;
-  } else if (before.length === 0) {
-    // First word - add space after if there's content after
-    newValue = newWord + (after.trim().length > 0 ? ' ' : '') + after.trimStart();
-    newCursorPos = newWord.length + 1;
-  } else if (after.trim().length === 0) {
-    // Last word - ensure space before
-    newValue = before + newWord;
-    newCursorPos = newValue.length;
-  } else {
-    // Middle word - ensure spaces on both sides
-    newValue = before + newWord + ' ' + after.trimStart();
-    newCursorPos = before.length + newWord.length + 1;
-  }
+  // Cursor sits right after the inserted word + the trailing space
+  const newCursorPos = before.length + newWord.length + 1;
 
   // Update input value
   input.value = newValue;
@@ -224,7 +217,7 @@ export function replaceCurrentWord(
 /**
  * Get all class names from the input value
  */
-export function getAllClasses(input: HTMLInputElement): string[] {
+export function getAllClasses(input: TextInputElement): string[] {
   return input.value
     .split(' ')
     .map((cls) => cls.trim())
@@ -239,12 +232,31 @@ export function shouldShowAutocomplete(word: string): boolean {
   return word.trim().length > 0;
 }
 
+// Height constants that match autocomplete.ts styles exactly
+const DROPDOWN_ITEM_HEIGHT = 52; // Each item: padding 8px top+bottom + class-name line ~20px + css line ~16px + gap 4px
+const DROPDOWN_LIST_PADDING = 8; // .autocomplete-list padding: 4px 0 top + bottom
+const DROPDOWN_MAX_HEIGHT = 300; // max-height in autocomplete styles
+const DROPDOWN_GAP = 4; // Gap between input edge and dropdown
+
 /**
- * Calculate dropdown position based on input element
- * Positions dropdown above the input to avoid cutoff in UX Builder sidebar
- * Dropdown height is estimated at 300px (max-height in autocomplete.ts)
+ * Estimate dropdown height based on number of items.
+ * Used to anchor the dropdown bottom edge to the input top edge.
  */
-export function calculateDropdownPosition(input: HTMLInputElement): {
+export function estimateDropdownHeight(itemCount: number): number {
+  const contentHeight = itemCount * DROPDOWN_ITEM_HEIGHT + DROPDOWN_LIST_PADDING;
+  return Math.min(contentHeight, DROPDOWN_MAX_HEIGHT);
+}
+
+/**
+ * Calculate dropdown position based on input element.
+ * Always positions above the input so the closest item is right next to the input.
+ * Items are rendered top-to-bottom (first item at top), so the last/closest item
+ * sits right above the input edge.
+ */
+export function calculateDropdownPosition(
+  input: TextInputElement,
+  itemCount = 10
+): {
   top: number;
   left: number;
 } {
@@ -252,11 +264,53 @@ export function calculateDropdownPosition(input: HTMLInputElement): {
   const scrollTop = window.scrollY || document.documentElement.scrollTop;
   const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
 
-  // Estimate dropdown height (matches max-height in autocomplete styles)
-  const dropdownHeight = 300;
+  const dropdownHeight = estimateDropdownHeight(itemCount);
 
   return {
-    top: rect.top + scrollTop - dropdownHeight - 4, // 4px gap above input
+    top: rect.top + scrollTop - dropdownHeight - DROPDOWN_GAP,
     left: rect.left + scrollLeft,
   };
+}
+
+/**
+ * Calculate expanded panel position based on input element
+ * Positions panel near the input, checking available space
+ */
+export function calculateExpandedPanelPosition(input: HTMLInputElement): {
+  top: number;
+  left: number;
+} {
+  const rect = input.getBoundingClientRect();
+  const scrollTop = window.scrollY || document.documentElement.scrollTop;
+  const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
+
+  // Panel dimensions (should match ExpandedEditor styles)
+  const panelWidth = 400;
+  const panelHeight = 300;
+
+  // Try to position to the right of the input first
+  let left = rect.right + scrollLeft + 8; // 8px gap
+  let top = rect.top + scrollTop;
+
+  // If not enough space on the right, position to the left
+  if (left + panelWidth > window.innerWidth) {
+    left = rect.left + scrollLeft - panelWidth - 8;
+  }
+
+  // If still not enough space, center horizontally
+  if (left < 0) {
+    left = (window.innerWidth - panelWidth) / 2 + scrollLeft;
+  }
+
+  // Ensure panel doesn't go below viewport
+  if (top + panelHeight > window.innerHeight + scrollTop) {
+    top = window.innerHeight + scrollTop - panelHeight - 20;
+  }
+
+  // Ensure panel doesn't go above viewport
+  if (top < scrollTop) {
+    top = scrollTop + 20;
+  }
+
+  return { top, left };
 }
