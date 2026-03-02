@@ -6,7 +6,7 @@ export default defineConfig({
   manifest: {
     name: 'UX Builder Tailwind CSS IntelliSense',
     description: 'Tailwind CSS class autocomplete and validation for Flatsome UX Builder',
-    version: '0.1.0',
+    version: '0.1.1',
     permissions: ['activeTab', 'storage'],
     host_permissions: ['http://localhost:3456/*'],
     action: {
