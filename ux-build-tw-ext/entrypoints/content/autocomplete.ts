@@ -96,6 +96,7 @@ export class AutocompleteDropdown {
    * Remove dropdown from DOM and cleanup
    */
   public unmount(): void {
+    document.removeEventListener('mousedown', this.handleOutsideMouseDown, true);
     if (this.container && this.container.parentNode) {
       this.container.parentNode.removeChild(this.container);
     }
@@ -207,16 +208,29 @@ export class AutocompleteDropdown {
         li.appendChild(cssSpan);
       }
 
-      // Click handler
-      li.addEventListener('click', () => {
+      // Use mousedown instead of click so it fires before the input's blur event.
+      // preventDefault() prevents the input from losing focus at all.
+      li.addEventListener('mousedown', (e: MouseEvent) => {
+        e.preventDefault(); // Prevent input blur
         this.selectedIndex = index;
         this.selectCurrent();
       });
 
-      // Hover handler
+      // Hover: only swap the .selected class, never re-render the whole list
+      // Re-rendering clears innerHTML which destroys existing mousedown listeners
+      // and can cause the browser to cancel the in-progress mousedown sequence.
       li.addEventListener('mouseenter', () => {
+        if (this.selectedIndex === index) return; // nothing to do
+        // Remove .selected from the previously selected item
+        const prev = this.listElement?.querySelector('.selected');
+        if (prev) {
+          prev.classList.remove('selected');
+          prev.removeAttribute('aria-selected');
+        }
+        // Add .selected to hovered item
+        li.classList.add('selected');
+        li.setAttribute('aria-selected', 'true');
         this.selectedIndex = index;
-        this.render();
       });
 
       this.listElement!.appendChild(li);
@@ -230,15 +244,21 @@ export class AutocompleteDropdown {
    * Setup event listeners for the dropdown
    */
   private setupEventListeners(): void {
-    // Close dropdown when clicking outside
-    document.addEventListener('click', this.handleOutsideClick, true);
+    // Close dropdown when clicking outside.
+    // Use mousedown (not click) so we can check before the selection fires,
+    // and use composedPath() to correctly detect clicks inside Shadow DOM.
+    document.addEventListener('mousedown', this.handleOutsideMouseDown, true);
   }
 
   /**
-   * Handle clicks outside the dropdown
+   * Handle mousedown outside the dropdown.
+   * Uses composedPath() to see through Shadow DOM boundaries — event.target
+   * alone would only show the shadow host, causing false "outside" detections.
    */
-  private handleOutsideClick = (event: MouseEvent): void => {
-    if (this.container && event.target instanceof Node && !this.container.contains(event.target)) {
+  private handleOutsideMouseDown = (event: MouseEvent): void => {
+    if (!this.container) return;
+    const path = event.composedPath();
+    if (!path.includes(this.container)) {
       this.options.onClose();
     }
   };
@@ -320,6 +340,8 @@ export class AutocompleteDropdown {
         overflow: hidden;
         display: flex;
         flex-direction: column;
+        /* Allow dropdown to shrink to content size for better proximity */
+        width: fit-content;
       }
 
       .autocomplete-list {
