@@ -8,6 +8,7 @@ import {
   calculateDropdownPosition,
   parseVariantPrefix,
   type WordPosition,
+  type TextInputElement,
 } from '~/utils/class-parser.ts';
 
 /**
@@ -15,7 +16,7 @@ import {
  * Handles input events, keyboard navigation, and dropdown lifecycle
  */
 export class InputHandler {
-  private input: HTMLInputElement;
+  private input: TextInputElement;
   private autocomplete: AutocompleteDropdown;
   private searchCallback: (query: string) => Promise<TailwindClass[]>;
   private debounceTimer: number | null = null;
@@ -24,34 +25,41 @@ export class InputHandler {
   private isDropdownVisible = false;
 
   constructor(
-    input: HTMLInputElement,
+    input: TextInputElement,
     searchCallback: (query: string) => Promise<TailwindClass[]>
   ) {
     this.input = input;
     this.searchCallback = searchCallback;
 
     this.autocomplete = new AutocompleteDropdown({
-      onSelect: this.handleSelect.bind(this),
-      onClose: this.handleClose.bind(this),
+      onSelect: this.handleSelect,
+      onClose: this.handleClose,
     });
 
     this.attachEventListeners();
   }
 
   /**
+   * Get the input element
+   */
+  public getInput(): TextInputElement {
+    return this.input;
+  }
+
+  /**
    * Attach event listeners to the input element
    */
   private attachEventListeners(): void {
-    this.input.addEventListener('input', this.handleInput.bind(this));
-    this.input.addEventListener('keydown', this.handleKeyDown.bind(this));
-    this.input.addEventListener('blur', this.handleBlur.bind(this));
-    this.input.addEventListener('focus', this.handleFocus.bind(this));
+    this.input.addEventListener('input', this.handleInput);
+    this.input.addEventListener('keydown', this.handleKeyDown as EventListener);
+    this.input.addEventListener('blur', this.handleBlur);
+    this.input.addEventListener('focus', this.handleFocus);
   }
 
   /**
    * Handle input event (typing)
    */
-  private handleInput(): void {
+  private handleInput = (): void => {
     // Clear existing debounce timer
     if (this.debounceTimer !== null) {
       window.clearTimeout(this.debounceTimer);
@@ -82,34 +90,34 @@ export class InputHandler {
     this.debounceTimer = window.setTimeout(() => {
       this.performSearch(utility);
     }, SEARCH_DEBOUNCE_MS);
-  }
+  };
 
   /**
    * Handle keydown event (keyboard navigation)
    */
-  private handleKeyDown(event: KeyboardEvent): void {
+  private handleKeyDown = (event: KeyboardEvent): void => {
     if (this.isDropdownVisible) {
       const handled = this.autocomplete.handleKeyDown(event);
       if (handled) {
         event.stopPropagation();
       }
     }
-  }
+  };
 
   /**
    * Handle blur event (input loses focus)
    */
-  private handleBlur(): void {
+  private handleBlur = (): void => {
     // Delay hiding to allow click events on dropdown
     setTimeout(() => {
       this.hideDropdown();
     }, 200);
-  }
+  };
 
   /**
    * Handle focus event (input gains focus)
    */
-  private handleFocus(): void {
+  private handleFocus = (): void => {
     // Re-trigger search if there's a current word
     this.currentWordPosition = getCurrentWord(this.input);
     if (this.currentWordPosition && shouldShowAutocomplete(this.currentWordPosition.word)) {
@@ -119,7 +127,7 @@ export class InputHandler {
         this.performSearch(utility);
       }
     }
-  }
+  };
 
   /**
    * Perform search and show dropdown
@@ -128,7 +136,7 @@ export class InputHandler {
     // console.log('[UX Builder TW] Searching for:', query);
     try {
       const results = await this.searchCallback(query);
-    //   console.log('[UX Builder TW] Search results:', results.length, 'classes');
+      //   console.log('[UX Builder TW] Search results:', results.length, 'classes');
 
       if (results.length > 0) {
         this.showDropdown(results);
@@ -146,7 +154,8 @@ export class InputHandler {
    * Show autocomplete dropdown with results
    */
   private showDropdown(results: TailwindClass[]): void {
-    const position = calculateDropdownPosition(this.input);
+    // Pass actual item count so position accounts for real dropdown height
+    const position = calculateDropdownPosition(this.input, results.length);
 
     if (!this.autocomplete.isMounted()) {
       this.autocomplete.mount(position);
@@ -172,30 +181,30 @@ export class InputHandler {
    * Handle class selection from dropdown
    * The className already includes the variant prefix (prepended by AutocompleteDropdown)
    */
-  private handleSelect(className: string): void {
+  private handleSelect = (className: string): void => {
     if (this.currentWordPosition) {
       replaceCurrentWord(this.input, className, this.currentWordPosition);
     }
     this.hideDropdown();
     this.input.focus();
-  }
+  };
 
   /**
    * Handle dropdown close request
    */
-  private handleClose(): void {
+  private handleClose = (): void => {
     this.hideDropdown();
     this.input.focus();
-  }
+  };
 
   /**
    * Cleanup and remove event listeners
    */
   public destroy(): void {
-    this.input.removeEventListener('input', this.handleInput.bind(this));
-    this.input.removeEventListener('keydown', this.handleKeyDown.bind(this));
-    this.input.removeEventListener('blur', this.handleBlur.bind(this));
-    this.input.removeEventListener('focus', this.handleFocus.bind(this));
+    this.input.removeEventListener('input', this.handleInput);
+    this.input.removeEventListener('keydown', this.handleKeyDown as EventListener);
+    this.input.removeEventListener('blur', this.handleBlur);
+    this.input.removeEventListener('focus', this.handleFocus);
 
     if (this.debounceTimer !== null) {
       window.clearTimeout(this.debounceTimer);
