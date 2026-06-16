@@ -3,6 +3,7 @@ import { defineConfig } from 'wxt';
 // See https://wxt.dev/api/config.html
 export default defineConfig({
   modules: ['@wxt-dev/module-react'],
+  outDir: 'dist',
   manifest: {
     name: 'UX Builder Tailwind CSS IntelliSense',
     description: 'Tailwind CSS class autocomplete and validation for Flatsome UX Builder',
