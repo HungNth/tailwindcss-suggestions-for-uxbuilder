@@ -11,7 +11,7 @@ Hoạt động **offline** — các class Tailwind chuẩn được bundle sẵn
 ## Cài đặt
 
 ```bash
-pnpm install
+npm install
 ```
 
 ---
@@ -23,7 +23,7 @@ pnpm install
 Tạo file JSON chứa toàn bộ Tailwind class (cần chạy trước khi build extension):
 
 ```bash
-pnpm run build:tw
+npm run build:tw
 ```
 
 Output: `ux-build-tw-ext/public/data/tailwind-classes.json`
@@ -32,7 +32,7 @@ Output: `ux-build-tw-ext/public/data/tailwind-classes.json`
 
 ```bash
 cd ux-build-tw-ext
-pnpm run build
+npm run build
 ```
 
 Output: `ux-build-tw-ext/.output/chrome-mv3/`
@@ -53,7 +53,7 @@ Backend chỉ cần thiết nếu bạn có file CSS riêng với `@apply` direc
 
 ```bash
 cd tw-backend
-pnpm run dev
+npm run dev
 ```
 
 Server chạy tại `http://localhost:3456`.
