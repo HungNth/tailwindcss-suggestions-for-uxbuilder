@@ -9,3 +9,4 @@ dist/
 stats.html
 stats-*.json
 web-ext.config.ts
+tailwind-classes.json
